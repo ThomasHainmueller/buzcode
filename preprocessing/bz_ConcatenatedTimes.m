@@ -1,4 +1,4 @@
-function  bz_ConcatenatedTimes(basepath,sortFiles)
+function [MergePoints] = bz_ConcatenatedTimes(basepath,sortFiles,save_results)
 %   bz_ConcatenatedTimes(basepath)
 %   This function generates the events.mat file that saves all the merge
 %   information. Useful if you dind't do this when you merged the dats.
@@ -19,7 +19,7 @@ function  bz_ConcatenatedTimes(basepath,sortFiles)
 %  OUTPUT
 %     Operates on files in specified folder.  No output variable
 %
-%   Antonio FR 10/2018
+%  Based on Antonio FR 10/2018, edited Thomas Hainmueller 12/2021
 
 
 %% Handling inputs
@@ -30,6 +30,10 @@ basename = bz_BasenameFromBasepath(basepath);
 
 if ~exist('sortFiles','var')
     sortFiles = 1;
+end
+
+if ~exist('save_results','var')
+    save_results = true;
 end
 
 %% If the dats are not merged quit
@@ -152,29 +156,41 @@ else
     disp('Primary .dats concatenated and size checked')
 end
 
-%% Get time points from the time.dat
-%Use the timestamps from time.dat to get the sort order
-%Number of samples in time.dat. First timepoint, last timepoint
-%Convert from number of samples to recording time of start/ends
-for ff = 1:length(datpaths.time)
-    
-	f = fopen(datpaths.time{ff},'r'); 
-    % Determine total number of samples in file
-    fileStart = ftell(f);
-    
-    %Read the first time point
-    firsttimepoint = fread(f,1,'int32');
-    status = fseek(f,-4,'eof'); %int32 = 4 bytes
-    lasttimepoint = fread(f,1,'int32');
-    fileStop = ftell(f);
-    
-    firstlasttimepoints(ff,:) = [firsttimepoint lasttimepoint];
-    numsamples(ff) = fileStop./4;
-    if ff==1
-        transitiontimes_samp = firstlasttimepoints(ff,:);
-    else
-        transitiontimes_samp(ff,:) = firstlasttimepoints(ff,:)+transitiontimes_samp(ff-1,2)+1;
-    end
+%% Get time points from the time.dat - replaced by getting from amplifier (below) 211203
+% %Use the timestamps from time.dat to get the sort order
+% %Number of samples in time.dat. First timepoint, last timepoint
+% %Convert from number of samples to recording time of start/ends
+% for ff = 1:length(datpaths.time)
+%     
+% 	f = fopen(datpaths.time{ff},'r'); 
+%     % Determine total number of samples in file
+%     fileStart = ftell(f);
+%     
+%     %Read the first time point
+%     firsttimepoint = fread(f,1,'int32');
+%     status = fseek(f,-4,'eof'); %int32 = 4 bytes
+%     lasttimepoint = fread(f,1,'int32');
+%     fileStop = ftell(f);
+%     
+%     firstlasttimepoints(ff,:) = [firsttimepoint lasttimepoint];
+%     numsamples(ff) = fileStop./4;
+%     if ff==1
+%         transitiontimes_samp = firstlasttimepoints(ff,:);
+%     else
+%         transitiontimes_samp(ff,:) = firstlasttimepoints(ff,:)+transitiontimes_samp(ff-1,2)+1;
+%     end
+% end
+
+%% Generate Mergepoints.events.mat from amplifier size
+for ff = 1:length(datpaths.amplifier)
+   lasttimepoint = datsizes.amplifier(ff) / (2*sessionInfo.nChannels) - 1; % datsize in byte, recordings in 16 (2*8) bit.
+   firstlasttimepoints(ff,:) = [0 lasttimepoint];
+   
+   if ff ==1
+       transitiontimes_samp(ff,:) = [0 lasttimepoint];
+   else
+       transitiontimes_samp(ff,:) = [0 lasttimepoint] + transitiontimes_samp(ff-1,2) +1;
+   end
 end
 
 disp(['Calculating merge times based on wideband samplingRate of ',num2str(sessionInfo.rates.wideband),'Hz.'])
@@ -195,9 +211,9 @@ MergePoints.sizecheck = sizecheck;
 MergePoints.detectorinfo.detectorname = 'bz_ConcatenateDats';
 MergePoints.detectorinfo.detectiondate = datestr(now,'yyyy-mm-dd');
 
-
-save(eventsfilename,'MergePoints');
-
+if save_results
+    save(eventsfilename,'MergePoints');
+end
 
 end
 

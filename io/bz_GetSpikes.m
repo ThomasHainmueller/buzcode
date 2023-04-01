@@ -344,7 +344,7 @@ else
 
     elseif strcmpi(sortingMethod, 'kilosort') || ~isempty(kilosort_path) % LOADING FROM KILOSORT
 
-        disp('loading spikes from Kilosort/Phy format...')
+        disp('loading spikes from Kilosort/Phy format...')        
         fs = spikes.samplingRate; 
         spike_cluster_index = readNPY(fullfile(kilosort_path.name, 'spike_clusters.npy'));
         spike_times = readNPY(fullfile(kilosort_path.name, 'spike_times.npy'));
@@ -361,7 +361,16 @@ else
                     temp1 = ismember(clu_channels,sessionInfo.spikeGroups.groups{s});
                     shanks(temp1) = s;
                 end
+            elseif isfield(cluster_info,'channel') %if it has the channel field
+                clu_channels = cluster_info.channel;
+                shanks = zeros(size(clu_channels));
+                
+                for s = 1:sessionInfo.spikeGroups.nGroups
+                    temp1 = ismember(clu_channels,sessionInfo.spikeGroups.groups{s});
+                    shanks(temp1) = s;
+                end
             end
+            
         else %otherwise try to load shanks.npy from kilosort1/phy1
             try
                 shanks = readNPY(fullfile(kilosort_path.name, 'shanks.npy')); % done

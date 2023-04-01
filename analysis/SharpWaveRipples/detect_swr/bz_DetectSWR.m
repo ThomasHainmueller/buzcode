@@ -259,6 +259,7 @@ Filebase = [pathname filesep filename];
 % Read in xml of file parameters
 fprintf(1, 'Loading XML file...\n');
 par        = LoadXml( [Filebase '.xml'] );
+
 % pull parameters from .xml file
 SR         = par.lfpSampleRate; % lfp sampling rate
 nChan      = par.nChannels;     % number of channels in the recording
@@ -501,7 +502,11 @@ hRip1      = makegausslpfir( ripBP( 1 ), SR, 6 );
 hRip2      = makegausslpfir( ripBP( 2 ), SR, 6 );
 
 % subtract mean before filtering
-lfpM       = lfp - int16(repmat(mean(lfp,2),[1 Nchan]));
+if isa(lfp,'int16')
+    lfpM       = lfp - int16(repmat(mean(lfp,2),[1 Nchan]));
+else
+    lfpM       = lfp - repmat(mean(lfp,2),[1 Nchan]);
+end
 %clear lfp
 
 rip        = firfilt( lfpM, hRip2 );    % highpass filter

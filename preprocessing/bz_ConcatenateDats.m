@@ -58,6 +58,7 @@ function bz_ConcatenateDats(basepath,deleteoriginaldatsbool,sortFiles)
 %
 % Copyright (C) 2017 by Brendon Watson
 % Modified by Antonio FR, 2018
+% Modified by Thomas Hainmueller, 2023
 
 
 %% Handling inputs
@@ -73,6 +74,9 @@ end
 if ~exist('sortFiles','var')
     sortFiles = 0;
 end
+% if ~exist('otherdattypes','var')
+%     otherdattypes = {'analogin';'digitalin';'auxiliary';'time';'supply'};
+% end
 
 
 %% If the dats are already merged quit
@@ -282,24 +286,38 @@ end
 %Use the timestamps from time.dat to get the sort order
 %Number of samples in time.dat. First timepoint, last timepoint
 %Convert from number of samples to recording time of start/ends
-for ff = 1:length(datpaths.time)
-    
-	f = fopen(datpaths.time{ff},'r'); 
-    % Determine total number of samples in file
-    fileStart = ftell(f);
-    
-    %Read the first time point
-    firsttimepoint = fread(f,1,'int32');
-    status = fseek(f,-4,'eof'); %int32 = 4 bytes
-    lasttimepoint = fread(f,1,'int32');
-    fileStop = ftell(f);
-    
-    firstlasttimepoints(ff,:) = [firsttimepoint lasttimepoint];
-    numsamples(ff) = fileStop./4;
-    if ff==1
-        transitiontimes_samp = firstlasttimepoints(ff,:);
-    else
-        transitiontimes_samp(ff,:) = firstlasttimepoints(ff,:)+transitiontimes_samp(ff-1,2)+1;
+if all(isfile(datpaths.time)) % Edited 1/19/2023 TH to accomodate recordings w/o time.dat
+    for ff = 1:length(datpaths.time)
+        
+        f = fopen(datpaths.time{ff},'r');
+        % Determine total number of samples in file
+        fileStart = ftell(f);
+        
+        %Read the first time point
+        firsttimepoint = fread(f,1,'int32');
+        status = fseek(f,-4,'eof'); %int32 = 4 bytes
+        lasttimepoint = fread(f,1,'int32');
+        fileStop = ftell(f);
+        
+        firstlasttimepoints(ff,:) = [firsttimepoint lasttimepoint];
+        numsamples(ff) = fileStop./4;
+        if ff==1
+            transitiontimes_samp = firstlasttimepoints(ff,:);
+        else
+            transitiontimes_samp(ff,:) = firstlasttimepoints(ff,:)+transitiontimes_samp(ff-1,2)+1;
+        end
+    end
+else
+    % Generate Mergepoints.events.mat from amplifier size
+    for ff = 1:length(datpaths.amplifier)
+        lasttimepoint = datsizes.amplifier(ff) / (2*sessionInfo.nChannels) - 1; % datsize in byte, recordings in 16 (2*8) bit.
+        firstlasttimepoints(ff,:) = [0 lasttimepoint];
+        
+        if ff ==1
+            transitiontimes_samp(ff,:) = [0 lasttimepoint];
+        else
+            transitiontimes_samp(ff,:) = [0 lasttimepoint] + transitiontimes_samp(ff-1,2) +1;
+        end
     end
 end
 

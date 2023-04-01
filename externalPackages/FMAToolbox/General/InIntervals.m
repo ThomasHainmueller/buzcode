@@ -124,7 +124,7 @@ times = values;
 for i = 1:n,
 	from = intervals(i,1);
 	to = intervals(i,2);
-	timeString = sprintf(['%' l '.2f %' l '.2f (%' l '.2f)'],from,to,to-from);
+	if verbose, timeString = sprintf(['%' l '.2f %' l '.2f (%' l '.2f)'],from,to,to-from); end
 	% Get values
 	more = FindInInterval(values,[from to],previous);
 	if ~isempty(more),

@@ -82,6 +82,7 @@ addParameter(p,'saveFig',false)
 addParameter(p,'saveMat',false)
 addParameter(p,'ISIpower',false)
 addParameter(p,'spikeLim',Inf)
+addParameter(p,'minspikes',2);
 
 parse(p,varargin{:})
 %Clean up this junk...
@@ -98,6 +99,7 @@ usechannel = p.Results.channel;
 ISIpower = p.Results.ISIpower; 
 spikeLim = p.Results.spikeLim;
 subpop = p.Results.cellclass;
+minspikes = p.Results.minspikes;
 
 %% Deal with input types
 
@@ -116,6 +118,7 @@ end
 if ~isempty(usechannel)
     usechannel = ismember(LFP.channels,usechannel);
     LFP.data = LFP.data(:,usechannel);
+    LFP.channels = LFP.channels(usechannel);
 end
 
 %Downsampling
@@ -126,7 +129,8 @@ end
 %% Subpopulations
 if isequal(subpop,0)
         numpop = 1;
-        popcellind = {1:numcells};
+        pops{1} = 'allcells';
+        popcellind = {1:spikes.numcells};
 elseif isequal(subpop,'done')
 else
         emptycells =cellfun(@isempty,subpop);
@@ -210,6 +214,10 @@ for cc = 1:length(LFP.channels)
     for nn = 1:spikes.numcells
         bz_Counter(nn,spikes.numcells,'Interpolating Cell')
         spikes.filtLFP{nn} = interp1(LFP_filt.timestamps,LFP_filt.data,spikes.times{nn},'nearest');
+        
+        if size(spikes.filtLFP{nn},1)<minspikes
+            spikes.filtLFP{nn} = NaN(1,nfreqs);
+        end
     end
 
 
@@ -352,7 +360,8 @@ if SHOWFIG
             [~,spikephasesort] = sort(SCORE(:,1));
             sortname = 'PC1';
         case 'none'
-            spikepowersort = 1:numcells;
+            spikepowersort = 1:spikes.numcells;
+            spikephasesort = spikepowersort;
         case 'fsort'
             fidx = interp1(freqs,1:nfreqs,sortf,'nearest'); 
             [~,spikepowersort] = sort(ratepowercorr(:,fidx));
@@ -364,7 +373,8 @@ if SHOWFIG
             spikephasesort = spikepowersort;
             sortname = 'Firing Rate';
         otherwise
-            spikepowersort = sortidx;
+            spikepowersort = 1:spikes.numcells;
+            spikephasesort = spikepowersort;
     end
     
     
@@ -465,14 +475,14 @@ if SHOWFIG
 
         subplot(2,2,2)
             imagesc(log2(freqs),1:spikes.numcells,ratepowercorr(spikepowersort,:))
-            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',sortname])
+            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',p.Results.sorttype])
             LogScale('x',2)
             title('Rate - Power Correlation')
             colormap(gca,posnegcolor)
             ColorbarWithAxis([-0.2 0.2],'rho')
         subplot(2,2,4)
             imagesc(log2(freqs),1:spikes.numcells,spikephasemag(spikephasesort,:))
-            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',sortname])
+            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',p.Results.sorttype])
             title('Spike - Phase Coupling')
             LogScale('x',2)
             caxis([0 0.2])
@@ -606,14 +616,14 @@ if SHOWFIG
 
         subplot(2,2,2)
             imagesc(log2(freqs),1:spikes.numcells,ratepowercorr(spikepowersort,:))
-            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',sortname])
+            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',p.Results.sorttype])
             LogScale('x',2)
             title('Rate - Power Correlation')
             colormap(gca,posnegcolor)
             ColorbarWithAxis([-0.2 0.2],'rho')
         subplot(2,2,4)
             imagesc(log2(freqs),1:spikes.numcells,spikephasemag(spikephasesort,:))
-            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',sortname])
+            xlabel('f (Hz)');ylabel(['Cell - Sorted by ',p.Results.sorttype])
             title('Spike - Phase Coupling')
             LogScale('x',2)
             caxis([0 0.2])
@@ -641,11 +651,16 @@ end
     function [phmag,phangle] = spkphase(spkLFP_fn)
         %Spike Times have to be column vector
             if isrow(spkLFP_fn); spkLFP_fn=spkLFP_fn'; end
-            if isempty(spkLFP_fn); phmag=nan;phangle=nan; return; end
+            if isempty(spkLFP_fn); phmag=NaN(size(spkLFP_fn'));phangle=NaN(size(spkLFP_fn')); return; end
         %Calculate (power normalized) resultant vector
         rvect = nanmean(abs(spkLFP_fn).*exp(1i.*angle(spkLFP_fn)),1);
         phmag = abs(rvect);
         phangle = angle(rvect);
+        
+        if all(isnan(phmag))
+            phmag = NaN(size(spkLFP_fn'));
+            phangle = NaN(size(spkLFP_fn'));
+        end
 
         %% Example Figure : Phase-Coupling
         % if phmag >0.1

@@ -125,9 +125,14 @@ for bnd = 1:length(phaserange)-1
 end
 
 %% Extracting amplitude with different methods and selecting
-for ch = 1:length(ampChans)
-    comod = zeros(length(amprange)-1,length(filtered_phase),length(ampChans));
-    
+comod = zeros(length(amprange)-1,length(filtered_phase),length(ampChans));
+
+% In case of universal phase channel
+if length(phaseCh)<2
+    phaseCh(1:length(ampChans)) = phaseCh;
+end
+
+for ch = 1:length(ampChans)  
     for apr = 1:length(amprange)-1
         switch(method)
             case 'wavelet'
@@ -143,7 +148,9 @@ for ch = 1:length(ampChans)
         phasebins = linspace(-pi,pi,numBins+1);
         
         for idx = 1:length(filtered_phase)
-            [~,~,phaseall] = histcounts(filtered_phase(idx).phase,phasebins);
+            %[~,~,phaseall] = histcounts(filtered_phase(idx).phase,phasebins);
+            phChID = filtered_phase(idx).channels == phaseCh(ch);
+            [~,~,phaseall] = histcounts(filtered_phase(idx).phase(:,phChID),phasebins);
             
             phaseAmp = zeros(numBins,1);
             for bb = 1:numBins
