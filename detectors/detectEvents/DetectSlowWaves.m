@@ -139,6 +139,8 @@ elseif MUAspikes
     numcells = length(spikes.times);
 else
     try spikes = bz_GetSpikes('basepath',basePath,'region','CTX','noPrompts',noPrompts);
+        % CAVE: bz_getSpikes with 'region' returns Frankenstein
+        % construction where only half of the fields are truncated...
     catch
         spikes = bz_GetSpikes('basepath',basePath,'noPrompts',noPrompts);
     end

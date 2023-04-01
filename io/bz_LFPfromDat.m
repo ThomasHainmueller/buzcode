@@ -29,6 +29,8 @@ function bz_LFPfromDat(basepath,varargin)
 %       'lopass'        (default: 450) low pass filter frequency 
 %       'noPrompts'     (default: true) prevents prompts about
 %                       saving/adding metadata
+%       'useGPU'        (default: false) whether or not to use GPU to speed
+%                       processing (might not want to if limited GPU)
 %
 %
 %OUTPUT
@@ -42,12 +44,18 @@ function bz_LFPfromDat(basepath,varargin)
 %Dependency: iosr tool box https://github.com/IoSR-Surrey/MatlabToolbox
 %
 %SMckenzie, BWatson, DLevenstein 2018
-
 %% Input handling
 if ~exist('basepath','var')
     basepath = pwd;
 end
 basename = bz_BasenameFromBasepath(basepath);
+
+GPUStatusUserDefined = 0;
+for a = 1:length(varargin)
+    if strcmp('useGPU',varargin{a})
+        GPUStatusUserDefined = 1;
+    end
+end
 
 defaultoutFS = 1250; %used later
 
@@ -55,19 +63,26 @@ p = inputParser;
 addParameter(p,'noPrompts',true,@islogical);
 addParameter(p,'outFs',[],@isnumeric);
 addParameter(p,'lopass',450,@isnumeric);
+addParameter(p,'useGPU',false,@islogical);
 parse(p,varargin{:})
 noPrompts = p.Results.noPrompts;
 outFs = p.Results.outFs;
 lopass = p.Results.lopass;
+useGPU = p.Results.useGPU;
 
 import iosr.dsp.*
 
-useGPU = false;
-try
-    if gpuDeviceCount>0
-        useGPU = true;
+% useGPU = false;%now setting default above
+if GPUStatusUserDefined && ~useGPU
+    1; %if user specified not to use GPU, don't use it
+else% otherwise, see if it's available to use
+    try
+        if gpuDeviceCount>0
+            useGPU = true;
+        end
     end
 end
+
 sizeInBytes = 2; %
 
 %% files check

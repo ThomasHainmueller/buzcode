@@ -36,7 +36,11 @@ imagesc(correlationmat)
 opts.threshold.permutations_percentile = 95;
 opts.threshold.number_of_permutations = 20;
 opts.threshold.method = 'circularshift';
-opts.AssemblyTemplate.method = 'PCA';
+opts.Patterns.method = 'PCA';
+% 
+% opts.Patterns.method = 'ICA';
+% opts.Patterns.number_of_iterations = 500;
+
 AssemblyTemplates = assembly_patterns(Activitymatrix,opts);
  
 %%
@@ -61,7 +65,8 @@ Assembly_opts.meanspikerate_activations = 3;
 Activitymatrix = toy_simulation(Network_opts,Assembly_opts);
 
 opts.threshold.method = 'MarcenkoPastur';
-opts.AssemblyTemplate.method = 'PCA';
+%opts.AssemblyTemplate.method = 'PCA';
+opts.Patterns.method = 'PCA';
 AssemblyTemplates = assembly_patterns(Activitymatrix,opts);
 
 figure(2),clf
@@ -73,8 +78,8 @@ stem(AssemblyTemplates(:,2))
 
 %%
 opts.threshold.method = 'MarcenkoPastur';
-opts.AssemblyTemplate.method = 'ICA';
-opts.AssemblyTemplate.number_of_iterations = 200;
+opts.Patterns.method = 'ICA';
+opts.Patterns.number_of_iterations = 200;
 AssemblyTemplates = assembly_patterns(Activitymatrix,opts);
 
 
@@ -84,17 +89,17 @@ stem(AssemblyTemplates(:,1))
 subplot(212)
 stem(AssemblyTemplates(:,2))
 
-%%
 
 Activities = assembly_activity(AssemblyTemplates,Activitymatrix);
 
 figure(4),clf
-subplot(211)
+ax1 = subplot(211);
 imagesc(Activitymatrix)
 xlim([0 100])
-subplot(212)
+ax2 = subplot(212);
 plot(Activities')
 xlim([0 100])
+linkaxes([ax1,ax2],'x');
 
 
 
