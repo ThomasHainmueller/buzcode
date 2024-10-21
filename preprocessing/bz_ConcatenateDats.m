@@ -87,7 +87,7 @@ end
 
 %% Find all .dat paths in subfolders 
 
-otherdattypes = {'analogin';'digitalin';'auxiliary';'time';'supply'};
+otherdattypes = {'analogin';'digitalin';'digitalout';'auxiliary';'time';'supply'};
 bad_otherdattypes = [];
 for odidx = 1:length(otherdattypes)
     %eval(['new' otherdattypes{odidx} 'path = fullfile(basepath,''' otherdattypes{odidx} '.dat'');'])
@@ -142,14 +142,14 @@ end
 %% Get the XML
 try 
     %Look for xml/sessionInfo in topfolder
-    %sessionInfo = bz_getSessionInfo(basepath,'noPrompts',true);
+    sessionInfo = bz_getSessionInfo(basepath,'noPrompts',true);
     load([basename '.session.mat']); % Peter's sessionInfo
 catch
     %If none exists, look for xml in any of the subpaths
     disp('No .xml or .sessionInfo in top folder, trying subfolders')
     for ff = 1:length(recordingnames)
         try
-            sessionInfo = LoadParameters(fullfile(basepath,recordingnames{ff}));
+            sessionInfo = LoadParameters(fullfile(basepath,filesep,recordingnames{ff}));
             xmlfilename = fullfile(sessionInfo.session.path,[sessionInfo.session.name,'.xml']);
             [SUCCESS,MESSAGE,MESSAGEID] = copyfile(...
                 xmlfilename,...

@@ -115,11 +115,35 @@ if ~isempty(d)
         outname = 'digitalin_fragment.dat';
     end
     disp('Writing digitalin file')
-    NumCh = length(board_dig_in_channels);
+    %NumCh = length(board_dig_in_channels); Caution per RHD2000 manual,
+    %all 16 channels are encoded in one number (irrespective of n
+    %channels selected!) TH 2023
     m = memmapfile(inname,'Format','uint16');
     h3 = fopen(outname,'W');
     for i = timeperiod(1)+1:timeperiod(2)
-        fwrite(h3,m.Data((i-1)*NumCh*SampRate+1:i*NumCh*SampRate),'uint16');
+        %fwrite(h3,m.Data((i-1)*NumCh*SampRate+1:i*NumCh*SampRate),'uint16');
+        fwrite(h3,m.Data((i-1)*SampRate+1:i*SampRate),'uint16');
+    end
+    fclose(h3);
+end
+
+%% digitalout.dat
+d = dir('digitalout.dat');
+if ~isempty(d)
+    disp('Writing digitalout file')
+    if RenameOriginalsAsOrig
+        inname = 'digitalout.dat_orig';
+        outname = 'digitalout.dat';
+        movefile(outname,inname)
+    else
+        inname = 'digitalout.dat';
+        outname = 'digitalout_fragment.dat';
+    end
+    disp('Writing digitalout file')
+    m = memmapfile(inname,'Format','uint16');
+    h3 = fopen(outname,'W');
+    for i = timeperiod(1)+1:timeperiod(2)
+        fwrite(h3,m.Data((i-1)*SampRate+1:i*SampRate),'uint16');
     end
     fclose(h3);
 end

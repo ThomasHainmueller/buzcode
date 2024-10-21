@@ -120,8 +120,8 @@ if plotLFP
     subplot(1,2,2);
     for ch=1:size(lfp_frag,2)
         offset = 500*(ch-1);
-        sh_tmp = 10e5*(lfp_frag(:,ch)) + offset;
-        plot(timestamps(win(1):win(2)),sh_tmp,'k','LineWidth',1.5); hold on;
+        sh_tmp = 10e2*(lfp_frag(:,ch)) + offset;
+        plot(timestamps(win(1):win(2)),sh_tmp,'k','LineWidth',1); hold on;
         clear sh_tmp
     end
     set(gca,'YDir','reverse','YTickLabel',[]);ylim([-500 offset+500]);xlim([timestamps(win(1)) timestamps(win(2))]);

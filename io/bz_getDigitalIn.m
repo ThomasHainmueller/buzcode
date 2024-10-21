@@ -38,15 +38,19 @@ addParameter(p,'fs',30000,@isnumeric)
 addParameter(p,'offset',0,@isnumeric)
 addParameter(p,'filename',[],@isstring)
 addParameter(p,'periodLag',5,@isnumeric)
+addParameter(p,'basepath',pwd,@ischar)
 
 parse(p, varargin{:});
 fs = p.Results.fs;
 offset = p.Results.offset;
 filename = p.Results.filename;
 lag = p.Results.periodLag;
+basepath = p.Results.basepath;
+
+oldfo = cd(basepath);
 
 if ~isempty(dir('*.xml'))
-    sess = bz_getSessionInfo(pwd,'noPrompts',true);
+    sess = bz_getSessionInfo(basepath,'noPrompts',true);
 end
 if ~isempty(dir('*DigitalIn.events.mat'))
     disp('Pulses already detected! Loading file.');
@@ -56,7 +60,7 @@ if ~isempty(dir('*DigitalIn.events.mat'))
 end
 
 if isempty(filename)
-    filename=dir('digitalIn.dat');
+    filename = dir('digitalIn.dat');
     filename = filename.name;
 else
     disp('No digitalIn file found...');
@@ -137,4 +141,6 @@ else
     digitalIn = [];
 end
  
+cd(oldfo);
+
 end

@@ -109,7 +109,12 @@ if isempty(basename)
            d = dir([basepath filesep '*dat']);
    end
    if length(d) > 1 % we assume one .lfp file or this should break
-       error('there is more than one .lfp file in this directory?');
+       basename = bz_BasenameFromBasepath(basepath);
+       if any(strcmp({d.name},[basename '.lfp']))
+           d = d(strcmp({d.name},[basename '.lfp']));
+       else
+           error('there is more than one .lfp file in this directory and none follows the naming convention basename.lfp!');
+       end
    elseif length(d) == 0
        d = dir([basepath filesep '*eeg']);
        if isempty(d)
@@ -149,7 +154,7 @@ end
 
 %% things we can parse from sessionInfo or xml file
 
-sessionInfo = bz_getSessionInfo(basepath, 'noPrompts', noPrompts);
+sessionInfo = bz_getSessionInfo(basepath, 'noPrompts',noPrompts);
 
 switch fromDat
    case false
@@ -194,8 +199,11 @@ for i = 1:nIntervals
                   'start',double(lfp(i).interval(1)),'channels',channels+1,...
                   'downsample',downsamplefactor);
     lfp(i).timestamps = [lfp(i).interval(1):(1/samplingRateLFP_out):...
-                        (lfp(i).interval(1)+(length(lfp(i).data)-1)/...
+                        (lfp(i).interval(1)+(size(lfp(i).data,1)-1)/...
                         samplingRateLFP_out)]';
+%     lfp(i).timestamps = [lfp(i).interval(1):(1/samplingRateLFP_out):...
+%                         (lfp(i).interval(1)+(length(lfp(i).data)-1)/...
+%                         samplingRateLFP_out)]'; % Replaced with above TH 2024
     lfp(i).channels = channels;
     lfp(i).samplingRate = samplingRateLFP_out;
     % check if duration is inf, and reset to actual duration...

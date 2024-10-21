@@ -32,9 +32,15 @@ if ~strcmp(filename(end-3:end),'.xml') % we can now give LoadParameters.m the fo
     
     if length(d)>1 %if multiple .xmls, pick the one that matches baseName
         baseName = bz_BasenameFromBasepath(filename);
-        correctxmlfilename = cellfun(@(X) strcmp(X,[baseName,'.xml']),{d.name});
-        d = d(correctxmlfilename);
-        display(['Multiple .xml files in this folder, trying ',baseName,'.xml'])
+        if any(cellfun(@(X) strcmp(X,[baseName,'.xml']),{d.name}));
+            correctxmlfilename = cellfun(@(X) strcmp(X,[baseName,'.xml']),{d.name});
+            d = d(correctxmlfilename);
+            display(['Multiple .xml files in this folder, trying ',baseName,'.xml'])
+        else
+            correctxmlfilename = cellfun(@(X) strcmp(X,['amplifier.xml']),{d.name});
+            d = d(correctxmlfilename);
+            display(['Multiple .xml files in this folder, trying amplifier.xml'])
+        end
     end
     if isempty(d) %if no .xmls - you have a problem
         error('LoadParameters:noXmls',['No .xml in ',filename])
