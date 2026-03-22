@@ -25,16 +25,22 @@ p = inputParser;
 addParameter(p,'noPrompts',false,@islogical);
 addParameter(p,'editGUI',false,@islogical);
 addParameter(p,'saveMat',false,@islogical);
+addParameter(p,'basename','',@ischar);
 parse(p,varargin{:})
 noPrompts = p.Results.noPrompts;
 editGUI = p.Results.editGUI;
 saveMat = p.Results.saveMat;
+basename = p.Results.basename;
 
 if ~exist('basePath','var')
     basePath = pwd;
 end
-baseName = bz_BasenameFromBasepath(basePath);
-filename = fullfile(basePath,[baseName,'.sessionInfo.mat']);
+
+if isempty(basename)
+    basename = bz_BasenameFromBasepath(basePath);
+end
+
+filename = fullfile(basePath,[basename,'.sessionInfo.mat']);
 
 %% Load the stuff
 %d = dir('*sessionInfo*'); %all files with sessioninfo in the name
@@ -50,7 +56,7 @@ if exist(filename,'file')
     end
     SIexist = true;  %Marks that session info exists as expected
 else
-   warning(['could not find file ',baseName,'.sessionInfo.mat ',...
+   warning(['could not find file ',basename,'.sessionInfo.mat ',...
        'running LoadParameters instead..']) 
    sessionInfo = LoadParameters(basePath);
    SIexist = false; 
@@ -96,7 +102,7 @@ if ~noPrompts && ~SIexist %Inform the user that they should save a file for late
 end
 
 if saveMat
-    disp(['saving ',baseName,'.sessionInfo.mat'])
+    disp(['saving ',basename,'.sessionInfo.mat'])
     save(filename,'sessionInfo'); 
 end
 end

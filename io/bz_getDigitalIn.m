@@ -60,7 +60,7 @@ if ~isempty(dir('*DigitalIn.events.mat'))
 end
 
 if isempty(filename)
-    filename = dir('digitalIn.dat');
+    filename = dir('digitalin.dat');
     filename = filename.name;
 else
     disp('No digitalIn file found...');

@@ -81,6 +81,7 @@ addParameter(p,'downsample',1,@isnumeric);
 % addParameter(p,'forceReload',false,@islogical);
 addParameter(p,'noPrompts',false,@islogical);
 addParameter(p,'fromDat',false,@islogical);
+addParameter(p,'verbose',true,@islogical); % Whether to display default messages
 
 parse(p,varargin{:})
 basename = p.Results.basename;
@@ -89,6 +90,7 @@ downsamplefactor = p.Results.downsample;
 basepath = p.Results.basepath;
 noPrompts = p.Results.noPrompts;
 fromDat = p.Results.fromDat;
+verbose = p.Results.verbose;
 
 % doing this so you can use either 'intervals' or 'restrict' as parameters to do the same thing
 intervals = p.Results.intervals;
@@ -179,11 +181,13 @@ if strcmp(channels,'all')
     channels = sessionInfo.channels;
 else
     %Put in something here to collapse into X-Y for consecutive channels...
-    display(['Loading Channels ',num2str(channels),' (0-indexing, a la Neuroscope)'])
+    if verbose
+        display(['Loading Channels ',num2str(channels),' (0-indexing, a la Neuroscope)'])
+    end
 end
 
 %% get the data
-disp('loading LFP file...')
+if verbose; disp('loading LFP file...'); end
 nIntervals = size(intervals,1);
 % returns lfp/bz format
 for i = 1:nIntervals

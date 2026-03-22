@@ -1,5 +1,6 @@
 function [SpikeLFPCoupling] = bz_GenSpikeLFPCoupling(spikes,LFP,varargin)
 % SpikeLFPCoupling = GenSpikeLFPCoupling(spikes,LFP)
+% TH addon 2024: PPC for each frequency band
 %
 %INPUT
 %   spikes          structure with fields (from bz_getSpikes)
@@ -81,7 +82,7 @@ addParameter(p,'showFig',true)
 addParameter(p,'saveFig',false)
 addParameter(p,'saveMat',false)
 addParameter(p,'ISIpower',false)
-addParameter(p,'spikeLim',Inf)
+addParameter(p,'spikeLim',1e10) % Inf makes numerical problems...
 addParameter(p,'minspikes',2);
 
 parse(p,varargin{:})
@@ -213,6 +214,7 @@ for cc = 1:length(LFP.channels)
     end
     for nn = 1:spikes.numcells
         bz_Counter(nn,spikes.numcells,'Interpolating Cell')
+        % This is the complex-number LFP spike phase:
         spikes.filtLFP{nn} = interp1(LFP_filt.timestamps,LFP_filt.data,spikes.times{nn},'nearest');
         
         if size(spikes.filtLFP{nn},1)<minspikes
@@ -220,6 +222,19 @@ for cc = 1:length(LFP.channels)
         end
     end
 
+    %% Pairwise phase correlation per cell
+    for nn = 1:spikes.numcells
+        % This is the complex-number LFP spike phase:
+        spikes.filtLFP{nn} = interp1(LFP_filt.timestamps, LFP_filt.data, spikes.times{nn},'nearest');
+        
+        if size(spikes.filtLFP{nn},1)<minspikes
+            spikes.ppc{nn} = NaN(1,nfreqs);
+        else
+            for fi = 1:nfreqs
+                spikes.ppc{nn}(fi) = ppc(spikes.filtLFP{nn}(:,fi));
+            end
+        end
+    end
 
     %% Cell Rate-Power Modulation
 
@@ -331,6 +346,7 @@ SpikeLFPCoupling.cell.ratepowercorr = ratepowercorr;
 SpikeLFPCoupling.cell.ratepowersig = ratepowersig;
 SpikeLFPCoupling.cell.spikephasemag = spikephasemag;
 SpikeLFPCoupling.cell.spikephaseangle = spikephaseangle;
+SpikeLFPCoupling.cell.ppc = vertcat(spikes.ppc{:});
 if ISIpower
     SpikeLFPCoupling.cell.ISIpowermodulation = totmutXPow;
 end
@@ -650,16 +666,23 @@ end
     %takes spike times from a single cell and caluclates phase coupling magnitude/angle
     function [phmag,phangle] = spkphase(spkLFP_fn)
         %Spike Times have to be column vector
-            if isrow(spkLFP_fn); spkLFP_fn=spkLFP_fn'; end
-            if isempty(spkLFP_fn); phmag=NaN(size(spkLFP_fn'));phangle=NaN(size(spkLFP_fn')); return; end
+        % if isrow(spkLFP_fn); spkLFP_fn=spkLFP_fn'; end % TH 241104 -- spkLFP_fn is nspikes x nfreq matrix
+        %if isempty(spkLFP_fn); phmag=NaN(size(spkLFP_fn'));phangle=NaN(size(spkLFP_fn')); return; end
+        if isempty(spkLFP_fn) 
+            phmag=NaN([1 size(spkLFP_fn,2)]);
+            phangle=NaN([1 size(spkLFP_fn,2)]); 
+            return; 
+        end
         %Calculate (power normalized) resultant vector
         rvect = nanmean(abs(spkLFP_fn).*exp(1i.*angle(spkLFP_fn)),1);
         phmag = abs(rvect);
         phangle = angle(rvect);
         
         if all(isnan(phmag))
-            phmag = NaN(size(spkLFP_fn'));
-            phangle = NaN(size(spkLFP_fn'));
+            phmag = NaN([1 size(spkLFP_fn,2)]);
+            phangle = NaN([1 size(spkLFP_fn,2)]);
+            %phmag = NaN(size(spkLFP_fn'));
+            %phangle = NaN(size(spkLFP_fn'));
         end
 
         %% Example Figure : Phase-Coupling
@@ -729,4 +752,27 @@ end
 %              %plot(I3)
         
     end
+end
+
+function [y] = ppc(angles)
+
+% % This version works with angles in radians
+% dof = sum(~isnan(angles),1);
+% sinSum = abs(nansum(sin(angles),1)); % sin(rad) == imag(complex)
+% cosSum = nansum(cos(angles),1); % cos(rad) == real(complex)
+% y = (cosSum.^2+sinSum.^2 - dof)./(dof.*(dof-1));
+
+% This version works with complex input
+dof = sum(~isnan(angles),1);
+sinSum = abs(nansum(imag(angles),1));
+cosSum = nansum(real(angles),1);
+y = (cosSum.^2+sinSum.^2 - dof)./(dof.*(dof-1));
+
+% % % Get angles back to -pi - pi range
+% % angles(angles>pi) = angles(angles>pi)-2*pi;
+% % 
+% % % Convert from radians; Reverse engineered from 'circ_r' and
+% % % 'ft_spiketriggeredspectrum_stat' in fieldtrip. Use caution.
+% % angles = exp(1i*angles);
+
 end

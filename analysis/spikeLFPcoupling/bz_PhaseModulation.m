@@ -124,7 +124,7 @@ if (lower(method) == 'hilbert')
     below=find(power<thresh);
     if max(diff(diff(below))) == 0
         below_thresh = [below(1) below(end)];
-    elseif length(below)>0;
+    elseif length(below)>0
         ends=find(diff(below)~=1);
         ends(end+1)=length(below);
         ends=sort(ends);
@@ -164,6 +164,7 @@ elseif (lower(method) == 'wavelet')
         below_thresh(:,1)=stops-dur;
     else
         below_thresh=[];
+        dur = 0;
     end
     
     % Remove very short below threshold intervals to speed up computation

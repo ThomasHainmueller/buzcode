@@ -65,6 +65,7 @@ BUZCODE = false;
 fast = false;
 channels = [];
 intervals = [-Inf Inf];
+doHilbert = true; % Added TH 12/2/2024, disable for large data volumes!
 
 % Check number of parameters
 if nargin < 1 | mod(length(varargin),2) ~= 0,
@@ -137,6 +138,9 @@ for i = 1:2:length(varargin),
             
         case 'intervals'
             intervals = varargin{i+1};
+            
+        case 'dohilbert'
+            doHilbert = varargin{i+1};
 
 		otherwise,
 			error(['Unknown property ''' num2str(varargin{i}) ''' (type ''help <a href="matlab:help Filter">Filter</a>'' for details).']);
@@ -249,19 +253,25 @@ elseif BUZCODE %BUZCODE has samples as a data structure
         else
            filtered.data(:,i) = FiltFiltM(b,a,double(samples.data(:,i))); 
         end
-	hilb = hilbert(filtered.data(:,i));
-        filtered.hilb(:,i) = hilb;
-        filtered.amp(:,i) = abs(hilb);
-        filtered.phase(:,i) = angle(hilb);
+        
+        if doHilbert
+            hilb = hilbert(filtered.data(:,i));
+            filtered.hilb(:,i) = hilb;
+            filtered.amp(:,i) = abs(hilb);
+            filtered.phase(:,i) = angle(hilb);
+        end
     end
     
     %Remove the overhang from intervals
     keepIDX = InIntervals(filtered.timestamps,intervals);
     filtered.data = filtered.data(keepIDX,:);
-    filtered.hilb = filtered.hilb(keepIDX,:);
-    filtered.amp = filtered.amp(keepIDX,:);
-    filtered.phase = filtered.phase(keepIDX,:);
     filtered.timestamps = filtered.timestamps(keepIDX);
+    
+    if doHilbert
+        filtered.hilb = filtered.hilb(keepIDX,:);
+        filtered.amp = filtered.amp(keepIDX,:);
+        filtered.phase = filtered.phase(keepIDX,:);
+    end
     
     filtered.filterparms.passband = passband;
     filtered.filterparms.stopband = stopband;

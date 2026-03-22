@@ -48,7 +48,7 @@ function bz_LFPfromDat(basepath,varargin)
 if ~exist('basepath','var')
     basepath = pwd;
 end
-basename = bz_BasenameFromBasepath(basepath);
+%basename = bz_BasenameFromBasepath(basepath);
 
 GPUStatusUserDefined = 0;
 for a = 1:length(varargin)
@@ -64,13 +64,21 @@ addParameter(p,'noPrompts',true,@islogical);
 addParameter(p,'outFs',[],@isnumeric);
 addParameter(p,'lopass',450,@isnumeric);
 addParameter(p,'useGPU',false,@islogical);
+addParameter(p,'basename','',@ischar);
+
 parse(p,varargin{:})
+
 noPrompts = p.Results.noPrompts;
 outFs = p.Results.outFs;
 lopass = p.Results.lopass;
 useGPU = p.Results.useGPU;
+basename = p.Results.basename;
 
 import iosr.dsp.*
+
+if isempty(basename)
+    basename = bz_BasenameFromBasepath(basepath);
+end
 
 % useGPU = false;%now setting default above
 if GPUStatusUserDefined && ~useGPU
@@ -119,7 +127,7 @@ if ~exist(fxml,'file') && ~exist(fsessioninfo,'file')
     warning('No xml or sessionInfo file, using defaults and creating a minimal sessionInfo file')
 else
     %Get everything from the xml/sessionInfo
-    sessionInfo = bz_getSessionInfo(basepath,'noPrompts',noPrompts);
+    sessionInfo = bz_getSessionInfo(basepath,'basename',basename,'noPrompts',noPrompts);
     inFs = sessionInfo.rates.wideband;
     nbChan = sessionInfo.nChannels;
     
